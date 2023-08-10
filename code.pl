@@ -95,3 +95,73 @@ popularidadMayorA(UnaBanda, LimiteDePopularidad):-
 
 popularidad(UnaBanda, Popularidad):-
     banda(UnaBanda,_,_,Popularidad).
+
+%Punto 2:
+esCareta(Festival):-
+    participan2BandasDeModa(Festival).
+esCareta(Festival):-
+    entradasVendidas(Festival,_,_),
+    not(entradaRazonable(_, Festival)).
+esCareta(Festival):-
+    toca(miranda,Festival).
+
+participan2BandasDeModa(Festival):-
+    participanteCareta(Festival, UnaBanda),
+    participanteCareta(Festival, OtraBanda),
+    UnaBanda \= OtraBanda.
+
+participanteCareta(Festival, UnaBanda):-
+    toca(UnaBanda, Festival),
+    estaDeModa(UnaBanda).
+
+toca(UnaBanda, Festival):-
+    participantesDeFestival(Festival, Participantes),
+    member(UnaBanda, Participantes).
+
+participantesDeFestival(Festival, Participantes):-
+    festival(Festival,_,Participantes,_).
+
+%Punto 3:
+entradaRazonable(Entrada, Festival):-
+    entradasVendidas(Festival, Entrada,_),
+    precioEntrada(Entrada, Festival, Precio),
+    esRazonableSegunPrecio(Entrada, Festival ,Precio).
+
+precioEntrada(Entrada, Festival, Precio):-
+    festival(Festival,_,_,PrecioBase),
+    precioSegunTipoDeEntrada(Entrada, Festival , PrecioBase, Precio).
+
+precioSegunTipoDeEntrada(campo,_,PrecioBase,PrecioBase).
+precioSegunTipoDeEntrada(plateaGeneral(Zona), Festival, PrecioBase, Precio):-
+    plusZonaSegunFestival(Festival, Zona, Plus),
+    Precio is PrecioBase + Plus.
+precioSegunTipoDeEntrada(plateaNumerada(NumeroFila),_,PrecioBase, Precio):-
+    Precio is PrecioBase + 200 / NumeroFila.
+
+
+esRazonableSegunPrecio(campo, Festival, Precio):-
+    popularidadTotalFestival(Festival, PopularidadTotal),
+    Precio < PopularidadTotal.
+esRazonableSegunPrecio(plateaGeneral(Zona), Festival,Precio):-
+    plusZonaSegunFestival(Festival, Zona, Plus),
+    Plus < Precio * 10 / 100.
+esRazonableSegunPrecio(plateaNumerada(_),Festival, Precio):- %Preguntar si es mejor 1 sólo pattern matching y separar lo de adentro o dejarlo así.
+    not(participanteCareta(Festival,_)),
+    Precio < 750.
+esRazonableSegunPrecio(plateaNumerada(_),Festival, Precio):-
+    festival(Festival,lugar(_,Capacidad),_,_),
+    participanteCareta(Festival,_),
+    popularidadTotalFestival(Festival, PopularidadTotal),
+    Precio < Capacidad / PopularidadTotal.
+
+plusZonaSegunFestival(Festival, Zona, Plus):-
+    festival(Festival,lugar(Lugar,_),_,_),
+    plusZona(Lugar,Zona, Plus).
+
+popularidadTotalFestival(Festival, PopularidadTotal):-
+    findall(Popularidad, popularidadDeParticipante(Festival, Popularidad), Popularidades),
+    sum_list(Popularidades, PopularidadTotal).
+
+popularidadDeParticipante(Festival, Popularidad):-
+    toca(Banda, Festival),
+    popularidad(Banda, Popularidad).
