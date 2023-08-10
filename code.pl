@@ -85,7 +85,7 @@ esReciente(UnaBanda):-
     Anios =< 5.
 
 debutoHace(UnaBanda, Anios):-
-    banda(UnaBanda,AnioDeDebut,_,_),
+    anioDeDebut(UnaBanda, AnioDeDebut),
     anioActual(AnioActual),
     Anios is AnioActual - AnioDeDebut.
 
@@ -123,8 +123,7 @@ participantesDeFestival(Festival, Participantes):-
 
 %Punto 3:
 entradaRazonable(Entrada, Festival):-
-    entradasVendidas(Festival, Entrada,_),
-    precioEntrada(Entrada, Festival, Precio),
+    precioYCantidadEntradaVendida(Festival, Entrada,_,Precio), %Preguntar sobre esta abstracción: *
     esRazonableSegunPrecio(Entrada, Festival ,Precio).
 
 precioEntrada(Entrada, Festival, Precio):-
@@ -136,7 +135,7 @@ precioSegunTipoDeEntrada(plateaGeneral(Zona), Festival, PrecioBase, Precio):-
     plusZonaSegunFestival(Festival, Zona, Plus),
     Precio is PrecioBase + Plus.
 precioSegunTipoDeEntrada(plateaNumerada(NumeroFila),_,PrecioBase, Precio):-
-    Precio is PrecioBase + 200 / NumeroFila.
+    Precio is (PrecioBase + 200) / NumeroFila.
 
 
 esRazonableSegunPrecio(campo, Festival, Precio):-
@@ -165,3 +164,70 @@ popularidadTotalFestival(Festival, PopularidadTotal):-
 popularidadDeParticipante(Festival, Popularidad):-
     toca(Banda, Festival),
     popularidad(Banda, Popularidad).
+
+
+%Punto 4:
+nacanpop(Festival):-
+    festival(Festival,_,_,_),
+    forall(toca(Banda, Festival), esNacional(Banda)),
+    entradaRazonable(_,Festival).
+
+esNacional(Banda):-
+    banda(Banda,_,ar,_).
+
+%Punto 5:
+recaudacion(Festival,Recaudacion):-
+    festival(Festival,_,_,_),
+    findall(ValorRecadadoPorTipoDeTicket,valorPorTipoDeTicket(Festival, ValorRecadadoPorTipoDeTicket), Valores),
+    sum_list(Valores, Recaudacion).
+
+valorPorTipoDeTicket(Festival, ValorRecadadoPorTipoDeTicket):-
+    precioYCantidadEntradaVendida(Festival,_, Cantidad, Precio),
+    ValorRecadadoPorTipoDeTicket is Precio * Cantidad.
+
+precioYCantidadEntradaVendida(Festival, Entrada, Cantidad, Precio):-
+    entradasVendidas(Festival, Entrada, Cantidad),
+    precioEntrada(Entrada, Festival, Precio).
+
+%Punto 6:
+estaBienPlaneado(Festival):-
+    festival(Festival,_,_,_),
+    forall(toca(Banda,Festival), creceEnPopularidad(Banda)),
+    ultimaBandaLegendaria(Festival).
+
+ultimaBandaLegendaria(Festival):-
+    ultimaBanda(Festival,Banda),
+    legendaria(Banda).
+
+ultimaBanda(Festival, Banda):-
+    participantesDeFestival(Festival, Participantes),
+    length(Participantes, Cantidad),
+    nth0(Cantidad, Participantes, Banda).
+
+legendaria(Banda):-
+    anioDeDebut(Banda, AnioDebut),
+    AnioDebut < 1980,
+    not(esNacional(Banda)),
+    laMasPopular(Banda).
+
+anioDeDebut(Banda, AnioDebut):-
+    banda(Banda,AnioDebut,_,_).
+
+laMasPopular(Banda):-
+    estaDeModa(BandaDeModa),
+    not(esMasPopular(BandaDeModa, Banda)).
+
+esMasPopular(UnaBanda,OtraBanda):-
+    popularidad(OtraBanda, PopularidadOtraBanda),
+    popularidadMayorA(UnaBanda, PopularidadOtraBanda).
+/*
+antes era:
+
+entradasVendidas(Festival, Entrada,_),
+precioEntrada(Entrada, Festival, Precio),
+
+Pero en valorPorTipoDeTicket hacia algo muy parecido, pero necesitaba la cantidad.
+Entonces, generé la abstracción:precioYCantidadEntradaVendida
+
+Pero no sé si está bien.
+ */
